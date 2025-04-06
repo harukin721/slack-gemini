@@ -58,28 +58,18 @@ jobs:
           APP_NAME=$(basename $(pwd))
           tar -czf "bin/$APP_NAME-${VERSION}.tar.gz" -C bin $APP_NAME
 
-      - name: Create Git Tag
+      - name: Create and Push Git Tag
         run: |
           VERSION=${{ github.event.inputs.version }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag $VERSION
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} $VERSION
-
-      - name: Upload Release Assets
-        run: |
-          VERSION=${{ github.event.inputs.version }}
-          APP_NAME=$(basename $(pwd))
-          curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -X POST \
-            -d '{"tag_name": "'${VERSION}'", "name": "'${VERSION}'", "body": "Release notes for '${VERSION}'"}' \
-            "https://api.github.com/repos/${{ github.repository }}/releases"
-
-      - name: Fetch tags after pushing
-        run: git fetch --tags
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: "bin/$APP_NAME-${{ github.event.inputs.version }}.tar.gz"
+          tag_name: ${{ github.event.inputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
